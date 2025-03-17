@@ -56,7 +56,7 @@ jobs:
       - name: Transcribe YouTube video
         run: |
           mkdir -p transcripts
-          python video_transcriber.py "youtube-videos/" \
+          python video-transcriber.py "youtube-videos/" \
             --output transcripts \
             --model ${{ inputs.model_size }} \
             --language ${{ inputs.language }} \
