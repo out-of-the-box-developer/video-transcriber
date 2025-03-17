@@ -1,0 +1,70 @@
+name: Transcribe YouTube Video
+
+on:
+  workflow_dispatch:
+    inputs:
+      youtube_url:
+        description: 'YouTube URL to transcribe'
+        required: true
+        type: string
+      language:
+        description: 'Language code (e.g., en, es, ja)'
+        required: false
+        type: string
+        default: 'en'
+      model_size:
+        description: 'Whisper model size'
+        required: false
+        type: choice
+        options:
+          - tiny
+          - base
+          - small
+          - medium
+          - large
+        default: 'medium'
+
+jobs:
+  transcribe:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          
+      - name: Install FFmpeg
+        run: |
+          python install-ffmpeg.py
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          
+      - name: Downlod YouTube video
+        run: |
+          mkdir -p videos
+          python download-youtube.py "${{ inputs.youtube_url }}" \
+            --output transcripts
+
+      - name: Transcribe YouTube video
+        run: |
+          mkdir -p transcripts
+          python video_transcriber.py "./videos/" \
+            --output transcripts \
+            --model ${{ inputs.model_size }} \
+            --language ${{ inputs.language }} \
+            --device ${{ env.DEVICE || 'cpu' }}
+          
+      - name: Upload transcription artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: transcriptions
+          path: transcripts/
+          retention-days: 7
