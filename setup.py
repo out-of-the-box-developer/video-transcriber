@@ -7,7 +7,7 @@ setup(
     install_requires=[
         "openai-whisper",
         "tqdm",
-        "yt-dlp",
+        "pytube",
     ],
     entry_points={
         "console_scripts": [

@@ -22,7 +22,8 @@ class VideoTranscriber:
         """
         print(f"Loading Whisper model '{model_size}'...")
         self.model = whisper.load_model(model_size, device=device)
-        self.supported_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.wmv', '.flv']
+        self.supported_video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.wmv', '.flv']
+        self.supported_audio_extensions = ['.mp3', '.wav']
         print(f"Model loaded and ready to transcribe!")
 
     def extract_audio(self, video_path: str, output_path: Optional[str] = None) -> str:
@@ -59,7 +60,7 @@ class VideoTranscriber:
                 os.remove(output_path)
             raise
 
-    def transcribe_audio(self, audio_path: str, language: Optional[str] = None) -> dict:
+    def transcribe_audio(self, audio_path: str, output_dir: Optional[str] = None, language: Optional[str] = None) -> dict:
         """
         Transcribe audio using Whisper.
         
@@ -70,11 +71,38 @@ class VideoTranscriber:
         Returns:
             The transcription result
         """
+        audio_filename = os.path.basename(audio_path)
+        audio_name = os.path.splitext(audio_filename)[0]
+
         transcribe_options = {}
         if language:
             transcribe_options["language"] = language
             
-        return self.model.transcribe(audio_path, **transcribe_options)
+        start_time = time.time()
+        result = self.model.transcribe(audio_path, **transcribe_options)
+        end_time = time.time()
+             
+        # Save transcription
+        transcription_path = os.path.join(output_dir, f"{audio_name}.txt")
+        with open(transcription_path, 'w', encoding='utf-8') as f:
+            f.write(result["text"])
+            
+        # Also save timestamps if available
+        if "segments" in result:
+            srt_path = os.path.join(output_dir, f"{audio_name}.srt")
+            with open(srt_path, 'w', encoding='utf-8') as f:
+                for i, segment in enumerate(result["segments"], 1):
+                    start = self._format_timestamp(segment["start"])
+                    end = self._format_timestamp(segment["end"])
+                    f.write(f"{i}\n")
+                    f.write(f"{start} --> {end}\n")
+                    f.write(f"{segment['text'].strip()}\n\n")
+        
+        print(f"Transcription completed in {end_time - start_time:.2f} seconds")
+        print(f"Transcription saved to {transcription_path}")
+        return transcription_path
+
+
 
     def transcribe_video(self, video_path: str, output_dir: Optional[str] = None, 
                         language: Optional[str] = None, keep_audio: bool = False) -> str:
@@ -106,32 +134,12 @@ class VideoTranscriber:
         
         # Transcribe audio
         print(f"Transcribing audio...")
-        start_time = time.time()
-        result = self.transcribe_audio(audio_path, language)
-        end_time = time.time()
+        transcription_path = self.transcribe_audio(audio_path, language)
         
         # Clean up temporary audio file if we're not keeping it
         if not keep_audio and audio_path.startswith(tempfile.gettempdir()):
             os.remove(audio_path)
-            
-        # Save transcription
-        transcription_path = os.path.join(output_dir, f"{video_name}.txt")
-        with open(transcription_path, 'w', encoding='utf-8') as f:
-            f.write(result["text"])
-            
-        # Also save timestamps if available
-        if "segments" in result:
-            srt_path = os.path.join(output_dir, f"{video_name}.srt")
-            with open(srt_path, 'w', encoding='utf-8') as f:
-                for i, segment in enumerate(result["segments"], 1):
-                    start = self._format_timestamp(segment["start"])
-                    end = self._format_timestamp(segment["end"])
-                    f.write(f"{i}\n")
-                    f.write(f"{start} --> {end}\n")
-                    f.write(f"{segment['text'].strip()}\n\n")
-        
-        print(f"Transcription completed in {end_time - start_time:.2f} seconds")
-        print(f"Transcription saved to {transcription_path}")
+          
         return transcription_path
         
     def transcribe_directory(self, directory: str, output_dir: Optional[str] = None, 
@@ -160,7 +168,7 @@ class VideoTranscriber:
         # Find all video files
         for root, _, files in os.walk(directory):
             for file in files:
-                if any(file.lower().endswith(ext) for ext in self.supported_extensions):
+                if any(file.lower().endswith(ext) for ext in self.supported_video_extensions):
                     video_files.append(os.path.join(root, file))
         
         if not video_files:
@@ -220,13 +228,19 @@ def main():
     path = os.path.abspath(args.path)
     if os.path.isfile(path):
         # Transcribe a single file
-        if not any(path.lower().endswith(ext) for ext in transcriber.supported_extensions):
-            print(f"Error: The file {path} is not a supported video format.")
-            return 1
+        if any(path.lower().endswith(ext) for ext in transcriber.supported_video_extensions):
+            transcriber.transcribe_video(
+                path, args.output, args.language, args.keep_audio
+            )
+            return 0
         
-        transcriber.transcribe_video(
-            path, args.output, args.language, args.keep_audio
-        )
+        if any(path.lower().endswith(ext) for ext in transcriber.supported_audio_extensions):
+            transcriber.transcribe_audio(path, args.output, args.language)
+            return 0
+        
+        print(f"Error: The file {path} is not a supported video format.")
+        return 1
+        
     elif os.path.isdir(path):
         # Transcribe all videos in the directory
         transcriber.transcribe_directory(
