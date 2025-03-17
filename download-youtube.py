@@ -1,41 +1,34 @@
-#!/usr/bin/env python3
+import os
 import argparse
-from pytube import YouTube
+import yt_dlp
 
-def download_video(url, path='.'):
-    try:
-        yt = YouTube(url)
-        # Select the highest resolution stream available
-        stream = yt.streams.get_lowest_resolution()
-        print(f"Downloading: {yt.title}")
-        stream.download(output_path=path)
-        print("Download completed!")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-
-def download_audio(url, path='.'):
-    try:
-        yt = YouTube(url)
-        # Filter streams to get only audio streams and pick the first available
-        audio_stream = yt.streams.filter(only_audio=True).first()
-        if audio_stream is None:
-            print("No audio stream found for this video.")
-            return
-        print(f"Downloading audio for: {yt.title}")
-        audio_stream.download(output_path=path)
-        print("Download completed!")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+def download_audio(url, output_dir):
+    # yt-dlp options:
+    # - 'format': selects the best available audio format
+    # - 'outtmpl': output file template (you can include directory and filename)
+    # - 'postprocessors': extracts audio and converts to MP3 (requires ffmpeg installed)
+    filename = '/%(title)s.%(ext)s'
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': os.path.join(output_dir, filename),
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }]
+    }
+    
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
 
 def main():
-    parser = argparse.ArgumentParser(description='Download Youtube Video')
+    parser = argparse.ArgumentParser(description='Download Youtube Audio')
     parser.add_argument('url', type=str, help='YouTube URL')
-    parser.add_argument('--output', '-o', type=str, help='Output directory for video')
+    parser.add_argument('--output', '-o', type=str, default=".", help='Output directory for audio')
 
     args = parser.parse_args()
 
-    download_audio(url=args.url, path=args.output)
+    download_audio(url=args.url, output_dir=args.output)
 
     return 0
 
