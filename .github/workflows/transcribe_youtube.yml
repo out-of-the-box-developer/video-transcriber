@@ -63,7 +63,7 @@ jobs:
             --device ${{ env.DEVICE || 'cpu' }}
           
       - name: Upload transcription artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.6.1
         with:
           name: transcriptions
           path: transcripts/
