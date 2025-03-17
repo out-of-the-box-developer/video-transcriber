@@ -68,7 +68,7 @@ def download_youtube(url: str, output_dir: Optional[str] = None) -> str:
     # Look for the file that matches the expected title
     for file in os.listdir(output_dir):
         file_path = os.path.join(output_dir, file)
-        if os.path.isfile(file_path) and any(file.endswith(ext) for ext in self.supported_extensions):
+        if os.path.isfile(file_path):
             if video_title.lower() in file.lower() or expected_filename.endswith(file):
                 print(f"Video downloaded to {file_path}")
                 return file_path
