@@ -24,6 +24,9 @@ A command-line tool for transcribing video files using FFmpeg and OpenAI's Whisp
 git clone https://github.com/yugoccp/video-transcriber.git
 cd video-transcriber
 
+# Install FFMpeg
+python install-ffmpeg.py
+
 # Install with pip
 pip install -e .
 
@@ -60,6 +63,13 @@ video-transcriber video.mp4 --device cuda
 
 # Keep the extracted audio files
 video-transcriber video.mp4 --keep-audio
+```
+
+Download Youtube videos to transcript:
+```bash
+python download-youtube.py <YOUTUBE_URL> --output youtube/
+
+video-transcriber youtube/ --output transcripts/
 ```
 
 ## Supported Video Formats

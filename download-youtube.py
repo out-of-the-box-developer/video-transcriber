@@ -4,7 +4,7 @@ import argparse
 import subprocess
 from typing import Optional
 
-def download_youtube(self, url: str, output_dir: Optional[str] = None) -> str:
+def download_youtube(url: str, output_dir: Optional[str] = None) -> str:
     """
     Download a YouTube video using yt-dlp.
     
@@ -83,7 +83,7 @@ def main():
 
     args = parser.parse_args()
 
-    download_youtube(args.url, args.output)
+    download_youtube(url=args.url, output_dir=args.output)
 
     return 0
 

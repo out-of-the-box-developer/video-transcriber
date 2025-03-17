@@ -49,14 +49,14 @@ jobs:
           
       - name: Downlod YouTube video
         run: |
-          mkdir -p videos
+          mkdir -p youtube-videos
           python download-youtube.py "${{ inputs.youtube_url }}" \
-            --output transcripts
+            --output youtube-videos
 
       - name: Transcribe YouTube video
         run: |
           mkdir -p transcripts
-          python video_transcriber.py "./videos/" \
+          python video_transcriber.py "youtube-videos/" \
             --output transcripts \
             --model ${{ inputs.model_size }} \
             --language ${{ inputs.language }} \
