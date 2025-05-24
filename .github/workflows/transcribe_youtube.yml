@@ -44,14 +44,15 @@ jobs:
           
       - name: Install dependencies
         run: |
+          apt install yt-dlp
           python -m pip install --upgrade pip
           pip install -e .
           
       - name: Downlod YouTube video
         run: |
           mkdir -p youtube-videos
-          python download-youtube.py "${{ inputs.youtube_url }}" \
-            --output youtube-videos
+          cd youtube-videos
+          ytp-dl ${{ inputs.youtube_url }}
 
       - name: Transcribe YouTube video
         run: |
